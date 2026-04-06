@@ -38,11 +38,17 @@ export const apiService = {
         name: 'food.jpg',
       } as any);
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+
       const response = await fetch(`${API_URL}/ai/recognize-food`, {
         method: 'POST',
         body: formData,
+        signal: controller.signal,
         // Let RN set the multipart boundary automatically
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) throw new Error(`Server error: ${response.status}`);
       return await response.json();
