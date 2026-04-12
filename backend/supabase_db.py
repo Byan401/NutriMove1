@@ -97,7 +97,7 @@ class SupabaseDB:
             'calories': sum(log.get('calories', 0) for log in logs),
             'protein': sum(log.get('protein', 0) for log in logs),
             'carbs': sum(log.get('carbs', 0) for log in logs),
-            'fats': sum(log.get('fats', 0) for log in logs),
+            'fat': sum(log.get('fat', 0) for log in logs),
             'meals_count': len(logs)
         }
         return total
@@ -135,9 +135,9 @@ class SupabaseDB:
         """البحث في جدول الأطعمة"""
         if not self.client:
             return []
-        response = self.client.table('nutrition')\
+        response = self.client.table('nuti_table')\
             .select('*')\
-            .ilike('food_name', f'%{query}%')\
+            .ilike('description', f'%{query}%')\
             .limit(limit)\
             .execute()
         return response.data
@@ -146,7 +146,7 @@ class SupabaseDB:
         """جلب طعام محدد"""
         if not self.client:
             return None
-        response = self.client.table('nutrition')\
+        response = self.client.table('nuti_table')\
             .select('*')\
             .eq('id', food_id)\
             .execute()

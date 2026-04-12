@@ -55,12 +55,13 @@ class WorkoutLog(BaseModel):
 
 class NutritionLog(BaseModel):
     user_id: str
+    image_url: Optional[str] = None
     meal_type: str
-    food_name: str
-    calories: int
+    calories: float
     protein: float
     carbs: float
-    fats: float
+    fat: float
+    ai_advice: Optional[str] = None
     date: str
 
 class ProgressLog(BaseModel):

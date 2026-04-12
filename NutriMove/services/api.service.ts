@@ -62,12 +62,13 @@ export const apiService = {
   
   async addNutritionLog(log: {
     user_id: string;
+    image_url?: string;
     meal_type: string;
-    food_name: string;
     calories: number;
     protein: number;
     carbs: number;
-    fats: number;
+    fat: number;
+    ai_advice?: string;
     date: string;
   }) {
     const response = await fetch(`${API_URL}/nutrition-logs`, {

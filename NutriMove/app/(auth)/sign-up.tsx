@@ -53,7 +53,7 @@ export default function SignUp() {
           [
             {
               text: 'OK',
-              onPress: () => router.replace('../(auth)/sign-in'),
+              onPress: () => router.replace('/(auth)/sign-in'),
             },
           ]
         );
@@ -110,7 +110,7 @@ export default function SignUp() {
 
           <Button
             title="Already have an account? Sign In"
-            onPress={() => router.replace('../../(auth)/sign-in')}
+            onPress={() => router.replace('/(auth)/sign-in')}
             variant="outline"
             fullWidth
           />

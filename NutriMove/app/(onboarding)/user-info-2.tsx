@@ -1,10 +1,13 @@
 import { useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from '../../services/supabase';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -35,12 +38,47 @@ export default function UserInfo2() {
   const router = useRouter();
   const [selectedGoal, setSelectedGoal] = useState('');
   const [targetWeight, setTargetWeight] = useState('');
+  const [loading, setLoading] = useState(false);
 
+  // const handleFinish = async () => {
+  //   // Save user profile to Supabase here
+  //   // For now, just navigate to home
+  //   router.replace('/(tabs)/home');
+  // };
   const handleFinish = async () => {
-    // Save user profile to Supabase here
-    // For now, just navigate to home
+  if (!selectedGoal) return;
+  setLoading(true);
+
+  try {
+    const step1Raw = await AsyncStorage.getItem('onboarding_step1');
+    if (!step1Raw) { Alert.alert('Error', 'Missing info from step 1'); return; }
+    const step1Data = JSON.parse(step1Raw);
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { Alert.alert('Error', 'No user found'); return; }
+
+    const { error } = await supabase.from('profiles').upsert({
+      id: user.id,
+      full_name: step1Data.full_name,
+      age: step1Data.age,
+      gender: step1Data.gender,
+      height: step1Data.height,
+      weight: step1Data.weight,
+      goal: selectedGoal,
+    });
+
+    if (error) { Alert.alert('Error', error.message); return; }
+
+    await AsyncStorage.setItem('onboardingCompleted', 'true');
+    await AsyncStorage.removeItem('onboarding_step1');
     router.replace('/(tabs)/home');
-  };
+
+  } catch (e) {
+    Alert.alert('Error', 'Something went wrong');
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>

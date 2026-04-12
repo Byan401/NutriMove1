@@ -105,12 +105,13 @@ export const useNutrition = () => {
       const today = new Date().toISOString().split('T')[0];
       await apiService.addNutritionLog({
         user_id: user.id,
+        image_url: lastResult.imageUri,
         meal_type: mealType,
-        food_name: lastResult.food_name,
         calories: lastResult.nutrition.calories,
         protein: lastResult.nutrition.protein,
         carbs: lastResult.nutrition.carbs,
-        fats: lastResult.nutrition.fat,
+        fat: lastResult.nutrition.fat,
+        ai_advice: lastResult.food_name,
         date: today,
       });
 
