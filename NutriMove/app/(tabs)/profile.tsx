@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Colors } from '../../constants/Colors';
@@ -12,6 +12,15 @@ export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [form, setForm] = useState({
+    full_name: '',
+    age: '',
+    gender: '',
+    height: '',
+    weight: '',
+    goal: '',
+  });
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -21,6 +30,14 @@ export default function ProfileScreen() {
           console.error('Error fetching profile:', error);
         } else {
           setProfile(data);
+          setForm({
+            full_name: data?.full_name ?? '',
+            age: data?.age?.toString() ?? '',
+            gender: data?.gender ?? '',
+            height: data?.height?.toString() ?? '',
+            weight: data?.weight?.toString() ?? '',
+            goal: data?.goal ?? '',
+          });
         }
       }
       setLoading(false);
@@ -111,42 +128,16 @@ export default function ProfileScreen() {
             </View>
           )}
 
-          {/* Stats */}
-          <View style={styles.profileStats}>
-            <View style={styles.profileStatItem}>
-              <Text style={styles.profileStatValue}>23</Text>
-              <Text style={styles.profileStatLabel}>Workouts</Text>
-            </View>
-            <View style={styles.profileStatItem}>
-              <Text style={styles.profileStatValue}>15</Text>
-              <Text style={styles.profileStatLabel}>Days Streak</Text>
-            </View>
-            <View style={styles.profileStatItem}>
-              <Text style={styles.profileStatValue}>12.5</Text>
-              <Text style={styles.profileStatLabel}>Hours</Text>
-            </View>
-          </View>
+          {/* Stats removed per request */}
 
           {/* Menu */}
           <View style={styles.menuSection}>
-            <TouchableOpacity style={styles.menuItem}>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => setIsEditing(true)}
+            >
               <Text style={styles.menuIcon}>👤</Text>
               <Text style={styles.menuText}>Edit Profile</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.menuItem}>
-              <Text style={styles.menuIcon}>⚙️</Text>
-              <Text style={styles.menuText}>Settings</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.menuItem}>
-              <Text style={styles.menuIcon}>📊</Text>
-              <Text style={styles.menuText}>Statistics</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.menuItem}>
-              <Text style={styles.menuIcon}>❓</Text>
-              <Text style={styles.menuText}>Help & Support</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
@@ -154,6 +145,97 @@ export default function ProfileScreen() {
               <Text style={styles.menuText}>Logout</Text>
             </TouchableOpacity>
           </View>
+            {/* Edit form modal/inline */}
+            {isEditing && (
+              <View style={styles.editContainer}>
+                <Text style={styles.editTitle}>Edit Profile</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Full name"
+                  value={form.full_name}
+                  onChangeText={text => setForm(s => ({ ...s, full_name: text }))}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Age"
+                  keyboardType="numeric"
+                  value={form.age}
+                  onChangeText={text => setForm(s => ({ ...s, age: text }))}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Gender"
+                  value={form.gender}
+                  onChangeText={text => setForm(s => ({ ...s, gender: text }))}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Height (cm)"
+                  keyboardType="numeric"
+                  value={form.height}
+                  onChangeText={text => setForm(s => ({ ...s, height: text }))}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Weight (kg)"
+                  keyboardType="numeric"
+                  value={form.weight}
+                  onChangeText={text => setForm(s => ({ ...s, weight: text }))}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Goal"
+                  value={form.goal}
+                  onChangeText={text => setForm(s => ({ ...s, goal: text }))}
+                />
+
+                <View style={styles.editActions}>
+                  <TouchableOpacity
+                    style={[styles.saveButton]}
+                    onPress={async () => {
+                      if (!user) return;
+                      const updates = {
+                        full_name: form.full_name,
+                        age: form.age ? parseInt(form.age, 10) : null,
+                        gender: form.gender,
+                        height: form.height ? parseFloat(form.height) : null,
+                        weight: form.weight ? parseFloat(form.weight) : null,
+                        goal: form.goal,
+                      } as any;
+                      const { data, error } = await userService.updateProfile(user.id, updates);
+                      if (error) {
+                        Alert.alert('Error', 'Could not update profile.');
+                        console.error(error);
+                      } else {
+                        setProfile(data);
+                        setIsEditing(false);
+                      }
+                    }}
+                  >
+                    <Text style={styles.saveText}>Save</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.cancelButton]}
+                    onPress={() => {
+                      setIsEditing(false);
+                      if (profile) {
+                        setForm({
+                          full_name: profile.full_name ?? '',
+                          age: profile.age?.toString() ?? '',
+                          gender: profile.gender ?? '',
+                          height: profile.height?.toString() ?? '',
+                          weight: profile.weight?.toString() ?? '',
+                          goal: profile.goal ?? '',
+                        });
+                      }
+                    }}
+                  >
+                    <Text style={styles.cancelText}>Cancel</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -278,5 +360,58 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 18,
     color: Colors.textSecondary,
+  },
+  editContainer: {
+    backgroundColor: Colors.backgroundLight,
+    marginHorizontal: 16,
+    marginTop: 16,
+    borderRadius: 12,
+    padding: 16,
+  },
+  editTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.text,
+    marginBottom: 8,
+  },
+  input: {
+    height: 44,
+    borderColor: Colors.border,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    marginBottom: 8,
+    backgroundColor: Colors.backgroundLight,
+    color: Colors.text,
+  },
+  editActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  saveButton: {
+    flex: 1,
+    backgroundColor: Colors.primary,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  saveText: {
+    color: Colors.text,
+    fontWeight: '700',
+  },
+  cancelButton: {
+    flex: 1,
+    backgroundColor: Colors.background,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  cancelText: {
+    color: Colors.textSecondary,
+    fontWeight: '600',
   },
 });

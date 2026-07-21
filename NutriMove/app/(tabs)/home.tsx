@@ -146,34 +146,62 @@ const styles = StyleSheet.create({
 });
 */
 // app/(tabs)/home.tsx
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
-import { useRouter } from 'expo-router';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { useRouter, useFocusEffect } from 'expo-router';
+import { useCallback, useState, useEffect } from 'react';
+import { useAuth } from '../../hooks/useAuth';
+import { userService } from '../../services/user.service';
 import { Colors } from '../../constants/Colors';
+import { DailyReportCard } from '../../components/nutrition/DailyReport';
+import { useDailyReport } from '../../hooks/useDailyReport';
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { report, loading, refreshReport } = useDailyReport();
+  const [refreshing, setRefreshing] = useState(false);
+  const { user } = useAuth();
+  const [profileName, setProfileName] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    const loadProfile = async () => {
+      if (!user) return;
+      const { data } = await userService.getProfile(user.id);
+      if (mounted && data) {
+        setProfileName(data.full_name || null);
+      }
+    };
+    loadProfile();
+    return () => { mounted = false; };
+  }, [user]);
+
+  // Refresh report when screen is focused (for real-time updates)
+  useFocusEffect(
+    useCallback(() => {
+      refreshReport();
+    }, [refreshReport])
+  );
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refreshReport();
+    setRefreshing(false);
+  }, [refreshReport]);
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />}
+    >
       <View style={styles.header}>
-        <Text style={styles.title}>Hello, User! 👋</Text>
+        <Text style={styles.title}>
+          Hello, {profileName ?? user?.email?.split('@')[0] ?? 'User'}!
+        </Text>
         <Text style={styles.subtitle}>Ready to crush your goals today?</Text>
       </View>
 
-      <View style={styles.statsContainer}>
-        <View style={styles.statBox}>
-          <Text style={styles.statNumber}>1,247</Text>
-          <Text style={styles.statLabel}>Calories</Text>
-        </View>
-        <View style={styles.statBox}>
-          <Text style={styles.statNumber}>45</Text>
-          <Text style={styles.statLabel}>Minutes</Text>
-        </View>
-        <View style={styles.statBox}>
-          <Text style={styles.statNumber}>8,432</Text>
-          <Text style={styles.statLabel}>Steps</Text>
-        </View>
-      </View>
+      {/* Daily Report Section */}
+      <DailyReportCard report={report} loading={loading} />
 
       <View style={styles.actionsContainer}>
         <Text style={styles.sectionTitle}>Quick Actions</Text>
@@ -223,6 +251,7 @@ const styles = StyleSheet.create({
   header: {
     padding: 24,
     paddingTop: 20,
+    paddingBottom: 12,
   },
   title: {
     fontSize: 28,
@@ -234,33 +263,9 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     marginTop: 4,
   },
-  statsContainer: {
-    flexDirection: 'row',
-    gap: 12,
-    paddingHorizontal: 24,
-    marginBottom: 32,
-  },
-  statBox: {
-    flex: 1,
-    backgroundColor: Colors.surface,
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  statNumber: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: Colors.primary,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    marginTop: 4,
-  },
   actionsContainer: {
     paddingHorizontal: 24,
+    paddingTop: 12,
     paddingBottom: 24,
   },
   sectionTitle: {
